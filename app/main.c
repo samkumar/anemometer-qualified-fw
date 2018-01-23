@@ -11,12 +11,11 @@
 #include "net/gnrc/netapi.h"
 #include "net/gnrc/netreg.h"
 
-#include <at30ts74.h>
-#include <mma7660.h>
+
 #include <periph/gpio.h>
 #include "asic.h"
 #include "version.h"
-#include <reboot.h>
+
 // 1 second, defined in us
 #define INTERVAL (1000000U)
 #define NETWORK_RTT_US 1000000
@@ -112,7 +111,7 @@ void initial_program(asic_tetra_t *a)
   if (bad) {
     asic_led(a, 1,0,0);
     xtimer_usleep(A_LONG_TIME);
-    reboot();
+    //reboot();
   }
   asic_led(a, 1,1,1);
   xtimer_usleep(100000); //100ms
@@ -128,12 +127,12 @@ void initial_program(asic_tetra_t *a)
   if (bad) {
     asic_led(a, 1,0,0);
     xtimer_usleep(A_LONG_TIME);
-    reboot();
+    //reboot();
   }
   asic_led(a, 0,1,0);
   xtimer_usleep(100000); //100ms
 }
-#if 0
+
 void dump_measurement(asic_tetra_t *a, measurement_t *m)
 {
   printf("primary: %d\n", m->primary);
@@ -143,9 +142,10 @@ void dump_measurement(asic_tetra_t *a, measurement_t *m)
     int16_t qz[16];
     uint64_t magsqr[16];
     uint64_t magmax = 0;
-    uint16_t tof_sf;
+    //uint16_t tof_sf;
+    uint8_t maxidx = 0;
     uint8_t *b = &m->sampledata[num][0];
-    tof_sf = b[0] + (((uint16_t)b[1]) << 8);
+    //tof_sf = b[0] + (((uint16_t)b[1]) << 8);
     for (int i = 0; i < 16; i++)
     {
       qz[i] = (int16_t) (b[6+i*4] + (((uint16_t)b[6+ i*4 + 1]) << 8));
@@ -154,45 +154,47 @@ void dump_measurement(asic_tetra_t *a, measurement_t *m)
       if (magsqr[i] > magmax)
       {
         magmax = magsqr[i];
+        maxidx = i;
       }
     }
-    //Now we know the max, find the first index to be greater than half max
-    uint64_t quarter = magmax >> 2;
-    int ei = 0;
-    int si = 0;
-    for (int i = 0; i < 16; i++)
-    {
-      if (magsqr[i] < quarter)
-      {
-        si = i;
-      }
-      if (magsqr[i] > quarter)
-      {
-        ei = i;
-        break;
-      }
-    }
-    double s = sqrt((double)magsqr[si]);
-    double e = sqrt((double)magsqr[ei]);
-    double h = sqrt((double)quarter);
-    double freq = tof_sf/2048.0*a->calres[num]/a->cal_pulse;
-    double count = si + (h - s)/(e - s);
-    double tof = (count + COUNT_TX) / freq * 8;
-
-    //Now "linearly" interpolate
-    printf("count %d /1000\n", (int)(count*1000));
-    printf("tof_sf %d\n", tof_sf);
-    printf("freq %d uHz\n", (int)(freq*1000));
-    printf("tof %d uS\n", (int)(tof*1000));
-    printf("tof 50us estimate %duS\n", (int)(count*50));
-    for (int i = 0; i < 16; i++)
-    {
-      printf("data %d = %d + %di\n", i, qz[i], iz[i]);
-    }
-    printf(".\n");
+    // //Now we know the max, find the first index to be greater than half max
+    // uint64_t quarter = magmax >> 2;
+    // int ei = 0;
+    // int si = 0;
+    // for (int i = 0; i < 16; i++)
+    // {
+    //   if (magsqr[i] < quarter)
+    //   {
+    //     si = i;
+    //   }
+    //   if (magsqr[i] > quarter)
+    //   {
+    //     ei = i;
+    //     break;
+    //   }
+    // }
+    printf("max = %d\n", maxidx);
+    // double s = sqrt((double)magsqr[si]);
+    // double e = sqrt((double)magsqr[ei]);
+    // double h = sqrt((double)quarter);
+    // double freq = tof_sf/2048.0*a->calres[num]/a->cal_pulse;
+    // double count = si + (h - s)/(e - s);
+    // double tof = (count + COUNT_TX) / freq * 8;
+    //
+    // //Now "linearly" interpolate
+    // printf("count %d /1000\n", (int)(count*1000));
+    // printf("tof_sf %d\n", tof_sf);
+    // printf("freq %d uHz\n", (int)(freq*1000));
+    // printf("tof %d uS\n", (int)(tof*1000));
+    // printf("tof 50us estimate %duS\n", (int)(count*50));
+    // for (int i = 0; i < 16; i++)
+    // {
+    //   printf("data %d = %d + %di\n", i, qz[i], iz[i]);
+    // }
+    // printf(".\n");
   }
 }
-#endif
+
 measurement_t sampm[4];
 void begin(void)
 {
@@ -225,6 +227,9 @@ void begin(void)
       }
       for (int p = 0; p < 4; p ++)
       {
+      //  if (p == 0) {
+          dump_measurement(&a, &sampm[p]);
+    //    }
         tx_measure(&a, &sampm[p]);
       }
       xtimer_usleep(50000);
@@ -234,7 +239,7 @@ failure:
   asic_led(&a, 1,1,0);
   printf("[run] encountered failure\n");
   xtimer_usleep(A_LONG_TIME);
-  reboot();
+  //reboot();
 }
 int main(void)
 {

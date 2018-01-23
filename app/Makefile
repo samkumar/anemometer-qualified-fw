@@ -9,10 +9,6 @@ CFLAGS += -DROOM_TYPE
 # Radio
 USEMODULE += at86rf233
 
-# Sensors
-USEMODULE += at30ts74 # temperature sensor
-USEMODULE += mma7660 # accelerometer
-
 # networking
 USEMODULE += gnrc_netdev_default
 USEMODULE += auto_init_gnrc_netif
@@ -32,7 +28,7 @@ USEMODULE += shell_commands
 USEMODULE += ps
 USEMODULE += netstats_l2
 USEMODULE += netstats_ipv6
-
+CFLAGS    += -DAUTO_CSMA_EN=1
 # Comment this out to disable code in RIOT that does safety checking
 # which is not needed in a production environment but helps in the
 # development process:
