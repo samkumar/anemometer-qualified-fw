@@ -8,15 +8,18 @@
 #include <unistd.h>
 
 #include "sched.h"
+#include <cib.h>
 #include <cond.h>
 #include <mutex.h>
 
 #include "anemometer.h"
 
-measure_set_t reading;
-bool reading_ready = false;
-mutex_t ready_mutex = MUTEX_INIT;
-cond_t ready_cond = COND_INIT;
+measure_set_t readings[READING_BUF_SIZE];
+cib_t readings_cib = CIB_INIT(READING_BUF_SIZE);
+mutex_t readings_mutex = MUTEX_INIT;
+cond_t readings_cond = COND_INIT;
+
+char chunk_buf[SEND_CHUNK_SIZE];
 
 void send_measurement_loop(void) {
     int sock;
@@ -61,29 +64,50 @@ void send_measurement_loop(void) {
         }
 
         for (;;) {
-            measure_set_t local_reading;
+            size_t partway_size_copied = 0;
+            int index;
             /*
              * This loop does the following:
              * 1) Wait until the next measurement is ready
              * 2) Send it over TCP
              */
-            mutex_lock(&ready_mutex);
-            while (!reading_ready) {
-                cond_wait(&ready_cond, &ready_mutex);
+            mutex_lock(&readings_mutex);
+            while (cib_avail(&readings_cib) < READING_SEND_LIMIT) {
+                cond_wait(&readings_cond, &readings_mutex);
             }
-            memcpy(&local_reading, &reading, sizeof(local_reading));
-            reading_ready = false;
-            mutex_unlock(&ready_mutex);
+            mutex_unlock(&readings_mutex);
 
-            /*
-             * Now we have copied the reading into our local space, so we don't
-             * need to worry about the measurement thread overwriting it.
-             */
-            rv = send(sock, &local_reading, sizeof(local_reading), 0);
-            if (rv == -1) {
-                perror("send");
-                goto retry;
-            }
+            /* Repeatedly send chunks until the readings buffer is empty. */
+            bool hit_empty;
+            do {
+                /* First, fill the chunk buffer with data. */
+                mutex_lock(&readings_mutex);
+                size_t chunk_buf_index = 0;
+                do {
+                    index = cib_peek(&readings_cib);
+                    assert(index != -1);
+                    size_t chunk_buf_left = sizeof(chunk_buf) - chunk_buf_index;
+                    size_t measure_set_left = sizeof(measure_set_t) - partway_size_copied;
+                    if (chunk_buf_left >= measure_set_left) {
+                        memcpy(&chunk_buf[chunk_buf_index], &((char*) &readings[index])[partway_size_copied], measure_set_left);
+                        chunk_buf_index += measure_set_left;
+                        cib_get(&readings_cib);
+                        partway_size_copied = 0;
+                    } else {
+                        memcpy(&chunk_buf[chunk_buf_index], &((char*) &readings[index])[partway_size_copied], chunk_buf_left);
+                        partway_size_copied += chunk_buf_left;
+                        chunk_buf_index = sizeof(chunk_buf);
+                    }
+                } while (!(hit_empty = (cib_avail(&readings_cib) == 0)) && chunk_buf_index != sizeof(chunk_buf));
+                mutex_unlock(&readings_mutex);
+
+                /* Second, send out the data (with the lock released). */
+                rv = send(sock, chunk_buf, chunk_buf_index, 0);
+                if (rv == -1) {
+                    perror("send");
+                    goto retry;
+                }
+            } while (!hit_empty);
         }
 
     retry:
@@ -101,7 +125,7 @@ void* sendloop(void* arg) {
 
 static kernel_pid_t sendloop_pid = 0;
 //static char sendloop_stack[1392];
-static char sendloop_stack[2500] __attribute__((aligned(4)));
+static char sendloop_stack[3000] __attribute__((aligned(4)));
 kernel_pid_t start_sendloop(void)
 {
     if (sendloop_pid != 0) {

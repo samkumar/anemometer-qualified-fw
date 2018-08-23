@@ -78,10 +78,10 @@ uint32_t totalSerialMsgCnt = 0;
 #define L7_TYPE 9
 
 /* Variables for communicating with TCP thread. */
-extern measure_set_t reading;
-extern bool reading_ready;
-extern mutex_t ready_mutex;
-extern cond_t ready_cond;
+extern measure_set_t readings[READING_BUF_SIZE];
+extern cib_t readings_cib;
+extern mutex_t readings_mutex;
+extern cond_t readings_cond;
 
 uint16_t ms_seqno = 0;
 
@@ -256,11 +256,15 @@ void tx_measure(asic_tetra_t *a, measurement_t *m, physical_sensors_t *phy)
   }
   ms.parity = parity;
 
-  mutex_lock(&ready_mutex);
-  memcpy(&reading, &ms, sizeof(reading));
-  reading_ready = true;
-  cond_signal(&ready_cond);
-  mutex_unlock(&ready_mutex);
+  mutex_lock(&readings_mutex);
+  int index = cib_put(&readings_cib);
+  if (index != -1) {
+      memcpy(&readings[index], &ms, sizeof(readings[index]));
+      if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
+          cond_signal(&readings_cond);
+      }
+  }
+  mutex_unlock(&readings_mutex);
 
   //Also write the packet to I2C_1
   int rv = i2c_write_bytes(I2C_1, DIRECT_DATA_ADDRESS, "cafebabe", 8);
@@ -432,12 +436,29 @@ failure:
   xtimer_usleep(A_LONG_TIME);
   reboot();
 }
+
+#define SEND_FAKE_DATA 1
 int main(void)
 {
     printf("[init] booting build b%d\n",BUILD);
     xtimer_usleep(OPENTHREAD_INIT_TIME);
     start_sendloop();
+#if SEND_FAKE_DATA
+    for (;;) {
+        xtimer_usleep(250000ul);
+        mutex_lock(&readings_mutex);
+        int index = cib_put(&readings_cib);
+        if (index != -1) {
+            memset(&readings[index], 0x00, sizeof(readings[index]));
+            if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
+                cond_signal(&readings_cond);
+            }
+        }
+        mutex_unlock(&readings_mutex);
+    }
+#else
     begin();
+#endif
 
     return 0;
 }

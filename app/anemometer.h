@@ -28,7 +28,15 @@ typedef struct __attribute__((packed))
 kernel_pid_t start_sendloop(void);
 
 #define SENDER_PORT 49998
-// #define RECEIVER_IP "fdde:ad00:beef:0:e9f0:45bc:c507:6f0e"
-// #define RECEIVER_IP "2607:f140:400:a009:58c0:ee04:ccd:e5dc"
-#define RECEIVER_IP "2001:470:4a71:0:3474:775c:b3f3:4887"
+#define RECEIVER_IP "2001:470:4a71:0:c46e:c7e9:6ac8:fcbd"
 #define RECEIVER_PORT 50000
+
+/* Used for network benchmarks/testing. */
+#define SEND_FAKE_DATA 1
+
+
+/* Constants for buffering and chunking. */
+// READING_BUF_SIZE must be a power of 2
+#define READING_BUF_SIZE 64
+#define READING_SEND_LIMIT 48
+#define SEND_CHUNK_SIZE 1024

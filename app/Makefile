@@ -14,7 +14,7 @@ PROGRAMMER ?= jlink
 QUIET ?= 1
 
 USEPKG += openthread
-OPENTHREAD_TYPE ?= ftd
+OPENTHREAD_TYPE ?= mtd
 ifeq ($(OPENTHREAD_TYPE),mtd)
     # MTD: A Minimal Thread Device does not have router functionality
     # compiled in. As a result, it is not necessary to configure the
@@ -28,7 +28,7 @@ else
     USEMODULE += openthread-cli-ftd
     #BOARD ?= samr21-xpro
     BOARD ?= hamilton
-    CFLAGS += -DCLOCK_USE_PLL=1
+    #CFLAGS += -DCLOCK_USE_PLL=1
 endif
 
 #Define PANID, CHANNEL, TXPOWER, and UART_BAUDRATE used by default
@@ -80,7 +80,7 @@ USEMODULE += random
 USEMODULE += ps
 
 USEMODULE += rtt_stdio
-#CFLAGS    += -DRTT_STDIO_DISABLE_STDIN
+CFLAGS    += -DRTT_STDIO_DISABLE_STDIN
 #CFLAGS 		+= -DSTDIO_POLL_INTERVAL=5000U
 #CFLAGS    += -DRTT_STDIO_ENABLE_BLOCKING_STDOUT
 CFLAGS    += -DTHREAD_STACKSIZE_DEFAULT=1800
