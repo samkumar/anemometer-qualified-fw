@@ -28,7 +28,8 @@ typedef struct __attribute__((packed))
 kernel_pid_t start_sendloop(void);
 
 #define SENDER_PORT 49998
-#define RECEIVER_IP "2001:470:4a71:0:c46e:c7e9:6ac8:fcbd"
+//#define RECEIVER_IP "2001:470:4a71:0:c46e:c7e9:6ac8:fcbd"
+#define RECEIVER_IP "2001:470:4a71:0:9911:2f67:3553:2d7f"
 #define RECEIVER_PORT 50000
 
 /* Used for network benchmarks/testing. */
@@ -38,5 +39,28 @@ kernel_pid_t start_sendloop(void);
 /* Constants for buffering and chunking. */
 // READING_BUF_SIZE must be a power of 2
 #define READING_BUF_SIZE 64
-#define READING_SEND_LIMIT 48
+
+#ifdef SEND_IN_BATCHES
+
+#define READING_SEND_LIMIT 32
+
+#ifdef USE_TCP
+// Make this large and let TCP perform segmentation
 #define SEND_CHUNK_SIZE 1024
+#endif
+#ifdef USE_COAP
+// This should be sized to CoAP uses the same number of link-layer frames as TCP
+#ifdef USE_BLOCKWISE_TRANSFER
+#define SEND_CHUNK_SIZE 512
+#else
+#define SEND_CHUNK_SIZE 469
+#endif
+
+#endif
+
+#else
+
+#define READING_SEND_LIMIT 1
+#define SEND_CHUNK_SIZE (sizeof(measure_set_t))
+
+#endif
