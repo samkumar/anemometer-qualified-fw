@@ -33,8 +33,53 @@ mutex_t coap_blocking_mutex = MUTEX_INIT;
 cond_t coap_blocking_cond = COND_INIT;
 bool coap_request_done = false;
 
-static uint32_t coap_token = 0;
+//static uint32_t coap_token = 0;
 static uint16_t coap_seqno = 0;
+
+xtimer_t start_polling_timer;
+msg_t start_polling_message;
+volatile bool polling_message_outstanding = false;
+extern kernel_pid_t coap_timer_thread_pid;
+void start_polling_fast(void) {
+    if (polling_message_outstanding) {
+        otThreadSetMaxPollInterval(openthread_get_instance(), 100);
+        polling_message_outstanding = false;
+    }
+}
+void start_polling_callback(void* arg) {
+    /* Schedule a thread to set polling interval to 100ms. */
+    (void) arg;
+    if (polling_message_outstanding) {
+        return;
+    }
+    polling_message_outstanding = true;
+    msg_t start_polling_message;
+    start_polling_message.type = 1;
+    if (msg_send(&start_polling_message, coap_timer_thread_pid) != 1) {
+        assert(false);
+        for (;;) {
+            printf("couldn't send message\n");
+        }
+    }
+}
+void schedule_fast_polling(void) {
+    start_polling_timer.callback = start_polling_callback;
+    start_polling_timer.arg = NULL;
+    xtimer_set(&start_polling_timer, 100000ul);
+}
+void stop_polling_fast(void) {
+    xtimer_remove(&start_polling_timer);
+    /*
+     * Now, timer is not running, so callback either executed or will not
+     * for the remainder of this function. The acting thread, that is executing
+     * start_polling_fast, will first acquire the coarse lock.
+     */
+    openthread_lock_coarse_mutex();
+    polling_message_outstanding = false;
+    otThreadSetMaxPollInterval(openthread_get_instance(), 0);
+    openthread_unlock_coarse_mutex();
+}
+
 
 /*
  * This function is called for each block received, and then again with a
@@ -130,9 +175,12 @@ void send_measurement_loop(void) {
             mutex_unlock(&readings_mutex);
 
             /* Repeatedly send chunks until the readings buffer is empty. */
-#if defined(USE_COAP) && defined(SEND_IN_BATCHES)
+#ifdef USE_COAP
+            schedule_fast_polling();
+#ifdef SEND_IN_BATCHES
             uint32_t block_num = 0;
-            coap_token++;
+            //coap_token++;
+#endif
 #endif
             bool hit_empty;
             do {
@@ -166,8 +214,6 @@ void send_measurement_loop(void) {
                 }
 #endif
 #ifdef USE_COAP
-                // TODO: Need to wait a bit before beginning to poll
-                otThreadSetMaxPollInterval(openthread_get_instance(), 100);
 #ifdef SEND_IN_BATCHES
                 {
                     static coap_message_t request;
@@ -187,20 +233,22 @@ void send_measurement_loop(void) {
                 }
 #else
                 {
-                    coap_token++;
+                    //coap_token++;
 
                     static coap_message_t request;
                     coap_init_message(&request, COAP_TYPE_CON, COAP_POST, coap_seqno++);
                     coap_set_header_uri_path(&request, "/anemometer");
-                    coap_set_token(&request, (const uint8_t*) &coap_token, sizeof(coap_token));
+                    //coap_set_token(&request, (const uint8_t*) &coap_token, sizeof(coap_token));
                     coap_set_payload(&request, chunk_buf, chunk_buf_index);
 
                     coap_blocking_request(&endpoint, &request);
                 }
 #endif
-                otThreadSetMaxPollInterval(openthread_get_instance(), 0);
 #endif
             } while (!hit_empty);
+#ifdef USE_COAP
+            stop_polling_fast();
+#endif
         }
 
 #ifdef USE_TCP

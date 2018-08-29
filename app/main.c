@@ -64,6 +64,17 @@ uint32_t tmfMsgCnt = 0;
 
 uint32_t totalSerialMsgCnt = 0;
 
+uint32_t radioLinkTx = 0;
+uint32_t radioLinkRx = 0;
+uint32_t radioPollTx = 0;
+uint32_t pollTimeoutCnt = 0;
+uint32_t transportPacketsSent = 0;
+uint32_t transportPacketsReceived = 0;
+uint32_t timeoutRexmitCnt = 0;
+uint32_t totalRexmitCnt = 0;
+uint32_t sendBatch = 0;
+uint32_t sendBatchSliding = 0;
+
 // 1 second, defined in us
 #define INTERVAL (1000000U)
 #define NETWORK_RTT_US 1000000
@@ -444,12 +455,48 @@ int main(void)
     xtimer_usleep(OPENTHREAD_INIT_TIME);
     start_sendloop();
 #if SEND_FAKE_DATA
+    uint32_t bench_seqno = 1;
     for (;;) {
         xtimer_usleep(250000ul);
         mutex_lock(&readings_mutex);
         int index = cib_put(&readings_cib);
         if (index != -1) {
-            memset(&readings[index], 0x00, sizeof(readings[index]));
+            /* Pack measure_set_t full of data for benchmarking. */
+            {
+                bench_set_t* bench = (bench_set_t*) &readings[index];
+                bench->seqno = bench_seqno++;
+                bench->msec = (uint32_t) (xtimer_now_usec64() / 1000);
+                bench->radio_on_time = radioOnTime;
+                bench->radio_off_time = radioOffTime;
+                bench->cpu_on_time = cpuOnTime;
+                bench->cpu_off_time = cpuOffTime;
+                bench->radio_link_tx = radioLinkTx;
+                bench->radio_link_rx = radioLinkRx;
+                bench->radio_tx_datareq = pollMsgCnt;
+                bench->radio_datareq_nopacket = pollTimeoutCnt;
+                bench->packets_sent = transportPacketsSent;
+                bench->packets_received = transportPacketsReceived;
+                bench->timeout_rexmits = timeoutRexmitCnt;
+                bench->total_rexmits = totalRexmitCnt;
+                bench->batches_sent = sendBatch;
+                bench->batches_sent_sliding = sendBatchSliding;
+                bench->measures_app_queued = cib_avail(&readings_cib) - 1;
+#ifdef USE_TCP
+                bench->bench_type = 0x10;
+#endif
+#ifdef USE_COAP
+                bench->bench_type = 0x20;
+#endif
+#ifdef SEND_IN_BATCHES
+#ifdef USE_BLOCKWISE_TRANSFER
+                bench->bench_type |= 0x1;
+#else
+                bench->bench_type |= 0x2;
+#endif
+#else
+                bench->bench_type |= 0x3;
+#endif
+            }
             if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
                 cond_signal(&readings_cond);
             }

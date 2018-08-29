@@ -428,6 +428,8 @@ coap_transport_init(void)
 //   coap_receive(get_src_endpoint(0), uip_appdata, uip_datalen());
 // }
 /*---------------------------------------------------------------------------*/
+extern uint32_t transportPacketsSent;
+extern uint32_t transportPacketsReceived;
 int
 coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
 {
@@ -492,6 +494,7 @@ coap_sendto(const coap_endpoint_t *ep, const uint8_t *data, uint16_t length)
               otMessageFree(message);
               return -1;
           }
+          transportPacketsSent++;
       }
   }
 
@@ -559,6 +562,7 @@ static void on_received_packet(void* aContext, otMessage* aMessage, const otMess
         return;
     }
     otMessageRead(aMessage, offset, received_packet_buffer, datalen);
+    transportPacketsReceived++;
     coap_receive(get_src_endpoint(aMessageInfo), received_packet_buffer, datalen);
 }
 

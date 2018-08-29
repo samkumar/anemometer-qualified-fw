@@ -61,6 +61,8 @@ MEMB(transactions_memb, coap_transaction_t, COAP_MAX_OPEN_TRANSACTIONS);
 LIST(transactions_list);
 
 /*---------------------------------------------------------------------------*/
+extern uint32_t timeoutRexmitCnt;
+extern uint32_t totalRexmitCnt;
 static void
 coap_retransmit_transaction(coap_timer_t *nt)
 {
@@ -71,6 +73,8 @@ coap_retransmit_transaction(coap_timer_t *nt)
   }
   ++(t->retrans_counter);
   LOG_DBG("Retransmitting %u (%u)\n", t->mid, t->retrans_counter);
+  timeoutRexmitCnt++;
+  totalRexmitCnt++;
   coap_send_transaction(t);
 }
 /*---------------------------------------------------------------------------*/

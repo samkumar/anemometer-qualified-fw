@@ -23,7 +23,29 @@ typedef struct __attribute__((packed))
   //M-3, M-2, M-1, M
   uint8_t data[3][16];  //28:75
   uint16_t tof_sf[3];   //76:81
-} measure_set_t; //82 bytes
+} measure_set_t; // 82 bytes
+
+typedef struct __attribute__((packed))
+{
+    uint32_t seqno;                  // 0:3
+    uint32_t msec;                   // 4:7
+    uint64_t radio_on_time;          // 8:15
+    uint64_t radio_off_time;         // 16:23
+    uint64_t cpu_on_time;            // 24:31
+    uint64_t cpu_off_time;           // 32:39
+    uint32_t radio_link_tx;          // 40:43
+    uint32_t radio_link_rx;          // 44:47
+    uint32_t radio_tx_datareq;       // 48:51
+    uint32_t radio_datareq_nopacket; // 52:55
+    uint32_t packets_sent;           // 56:59
+    uint32_t packets_received;       // 60:63
+    uint32_t timeout_rexmits;        // 64:67
+    uint32_t total_rexmits;           // 68:71
+    uint32_t batches_sent;           // 72:75
+    uint32_t batches_sent_sliding;   // 76:79
+    uint8_t measures_app_queued;     // 80
+    uint8_t bench_type;              // 81
+} bench_set_t; // 82 bytes
 
 kernel_pid_t start_sendloop(void);
 

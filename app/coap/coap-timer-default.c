@@ -66,7 +66,7 @@
 // static struct etimer timer;
 static xtimer_t timer;
 static msg_t timer_msg;
-kernel_pid_t timer_thread_pid;
+kernel_pid_t coap_timer_thread_pid;
 /*---------------------------------------------------------------------------*/
 static void
 update_timer(void)
@@ -77,7 +77,7 @@ update_timer(void)
   if(remaining == 0) {
     /* Run as soon as possible */
     // process_poll(&coap_timer_process);
-    msg_send(&timer_msg, timer_thread_pid);
+    msg_send(&timer_msg, coap_timer_thread_pid);
   } else {
     // remaining *= CLOCK_SECOND;
     // remaining /= 1000;
@@ -96,7 +96,7 @@ update_timer(void)
         /* Wait minimum 1 millisecond */
         remaining = 1;
     }
-    xtimer_set_msg64(&timer, 1000 * remaining, &timer_msg, timer_thread_pid);
+    xtimer_set_msg64(&timer, 1000 * remaining, &timer_msg, coap_timer_thread_pid);
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -118,6 +118,7 @@ update_timer(void)
 //   }
 //   PROCESS_END();
 // }
+void start_polling_fast(void);
 void* coap_timer_process(void* arg) {
     (void) arg;
 
@@ -130,11 +131,24 @@ void* coap_timer_process(void* arg) {
         msg_receive(&msg);
 
         openthread_lock_coarse_mutex();
-        if (coap_timer_run()) {
-            /* Needs to run again. */
-            msg_send_to_self(&msg);
-        } else {
-            update_timer();
+        switch (msg.type) {
+        case 0:
+            if (coap_timer_run()) {
+                /* Needs to run again. */
+                msg_send_to_self(&msg);
+            } else {
+                update_timer();
+            }
+            break;
+        case 1:
+            start_polling_fast();
+            break;
+        default:
+            assert(false);
+            for (;;) {
+                printf("Unknown message type %d\n", msg.type);
+            }
+            break;
         }
         openthread_unlock_coarse_mutex();
     }
@@ -164,7 +178,8 @@ static void
 init(void)
 {
   // process_start(&coap_timer_process, NULL);
-  timer_thread_pid = thread_create(timer_stack, sizeof(timer_stack),
+  timer_msg.type = 0;
+  coap_timer_thread_pid = thread_create(timer_stack, sizeof(timer_stack),
                              13, THREAD_CREATE_STACKTEST,
                              coap_timer_process, NULL, "coap_timer");
 }
@@ -173,7 +188,7 @@ static void
 update(void)
 {
   // process_poll(&coap_timer_process);
-  msg_send(&timer_msg, timer_thread_pid);
+  msg_send(&timer_msg, coap_timer_thread_pid);
 }
 /*---------------------------------------------------------------------------*/
 const coap_timer_driver_t coap_timer_default_driver = {
