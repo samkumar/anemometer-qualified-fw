@@ -76,7 +76,7 @@ USEMODULE += rtt_stdio
 CFLAGS += -DCPU_DUTYCYCLE_MONITOR
 CFLAGS += -DRADIO_DUTYCYCLE_MONITOR
 
-CFLAGS += -DSEND_IN_BATCHES
+# CFLAGS += -DSEND_IN_BATCHES
 
 # Use port of Contiki CoAP
 # DIRS += $(CURDIR)/coap
@@ -106,8 +106,8 @@ CFLAGS    += -DDMAC_ENABLE=0
 CFLAGS    += -DVDD=1800
 
 # Sensors
-USEMODULE += saul_reg        # SAUL: sensor/actuator abstraction layer
-USEMODULE += auto_init_saul
+# USEMODULE += saul_reg        # SAUL: sensor/actuator abstraction layer
+# USEMODULE += auto_init_saul
 #USEMODULE += tmp006          # ambient temperature
 # USEMODULE += hdc1000         # humidity and temperature
 USEMODULE += fxos8700        # acceleration and magnetic field
