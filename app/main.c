@@ -481,21 +481,25 @@ int main(void)
                 bench->batches_sent = sendBatch;
                 bench->batches_sent_sliding = sendBatchSliding;
                 bench->measures_app_queued = cib_avail(&readings_cib) - 1;
+                /* Encode transport policy in bits 3 and 4. */
 #ifdef USE_TCP
-                bench->bench_type = 0x10;
+                bench->bench_type = 0x04;
 #endif
 #ifdef USE_COAP
-                bench->bench_type = 0x20;
+                bench->bench_type = 0x08;
 #endif
+                /* Encode baching policy in last two bits. */
 #ifdef SEND_IN_BATCHES
 #ifdef USE_BLOCKWISE_TRANSFER
-                bench->bench_type |= 0x1;
+                bench->bench_type |= 0x01;
 #else
-                bench->bench_type |= 0x2;
+                bench->bench_type |= 0x02;
 #endif
 #else
-                bench->bench_type |= 0x3;
+                bench->bench_type |= 0x03;
 #endif
+                /* Encode Node ID in upper nybble. */
+                bench->bech_type |= 0x00;
             }
             if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
                 cond_signal(&readings_cond);
