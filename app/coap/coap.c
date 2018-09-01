@@ -53,6 +53,9 @@
 #include "coap.h"
 #include "coap-transactions.h"
 
+/* For random numbers. */
+#include "random.h"
+
 /* Log configuration */
 #include "coap-log.h"
 #define LOG_MODULE "coap"
@@ -281,7 +284,8 @@ void
 coap_init_connection(void)
 {
   /* initialize transaction ID */
-  current_mid = rand();
+  //current_mid = rand();
+  current_mid = (uint16_t) random_uint32();
 }
 /*---------------------------------------------------------------------------*/
 uint16_t

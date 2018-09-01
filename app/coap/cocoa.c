@@ -13,6 +13,9 @@
  */
 #ifdef COCOA
 
+// Random Numbers
+#include "random.h"
+
 // #include "er-coap-transactions.h"
 #include "coap-transactions.h"
 #include "lib/list.h"
@@ -250,7 +253,7 @@ coap_check_rtt_estimation(otIp6Address* transactionAddr, list_t transactions_lis
 		  coap_new_rtt_estimation(0, transactionAddr, 0);
 	  }
 	//   clock_time_t initialrto = ((COAP_INITIAL_RTO + (random_rand() % (clock_time_t) COAP_RESPONSE_TIMEOUT_BACKOFF_MASK)) << destCount);
-	  clock_time_t initialrto = ((COAP_INITIAL_RTO + (rand() % (clock_time_t) COAP_RESPONSE_TIMEOUT_BACKOFF_MASK)) << destCount);
+	  clock_time_t initialrto = ((COAP_INITIAL_RTO + (random_uint32() % (clock_time_t) COAP_RESPONSE_TIMEOUT_BACKOFF_MASK)) << destCount);
 	//   PRINTF("blindRTO: %lu (with already %u ongoing transactions)\n", initialrto, destCount);
 	  PRINTF("blindRTO: %llu (with already %u ongoing transactions)\n", initialrto, destCount);
 	  return  initialrto > (32 * CLOCK_SECOND) ? (32 * CLOCK_SECOND) : initialrto ;

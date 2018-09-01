@@ -499,7 +499,7 @@ int main(void)
                 bench->bench_type |= 0x03;
 #endif
                 /* Encode Node ID in upper nybble. */
-                bench->bech_type |= 0x00;
+                bench->bench_type |= 0x00;
             }
             if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
                 cond_signal(&readings_cond);

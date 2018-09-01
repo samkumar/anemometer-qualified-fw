@@ -48,6 +48,9 @@
 #include "lib/list.h"
 #include <stdlib.h>
 
+/* Added for random numbers. */
+#include "random.h"
+
 /* Log configuration */
 #include "coap-log.h"
 #define LOG_MODULE "coap"
@@ -127,13 +130,15 @@ coap_send_transaction(coap_transaction_t *t)
         // clock_time_t storedRto = coap_check_rtt_estimation(&t->addr, transactions_list);
         clock_time_t storedRto = coap_check_rtt_estimation(&t->endpoint.ipaddr, transactions_list);
         //t->retrans_timer.timer.interval = storedRto+ random_rand()% (storedRto >> 1);
-        t->retrans_interval = storedRto + rand() % (storedRto >> 1);
+        //t->retrans_interval = storedRto + rand() % (storedRto >> 1);
+        t->retrans_interval = storedRto + random_uint32() % (storedRto >> 1);
         t->start_rto = storedRto;
         //t->timestamp = clock_time();
         t->timestamp = coap_timer_uptime();
 #else
         t->retrans_interval =
-          COAP_RESPONSE_TIMEOUT_TICKS + (rand() %
+          //COAP_RESPONSE_TIMEOUT_TICKS + (rand() %
+          COAP_RESPONSE_TIMEOUT_TICKS + (random_uint32() %
                                          COAP_RESPONSE_TIMEOUT_BACKOFF_MASK);
 #endif
         LOG_DBG("Initial interval %lu msec\n",
