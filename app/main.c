@@ -455,16 +455,18 @@ int main(void)
     xtimer_usleep(OPENTHREAD_INIT_TIME);
     start_sendloop();
 #if SEND_FAKE_DATA
-    uint32_t bench_seqno = 1;
+    uint32_t bench_seqno = 0;
+    xtimer_ticks32_t start = xtimer_now();
     for (;;) {
-        xtimer_usleep(250000ul);
+        xtimer_periodic_wakeup(&start, 1000000ul);
         mutex_lock(&readings_mutex);
+        bench_seqno++;
         int index = cib_put(&readings_cib);
         if (index != -1) {
             /* Pack measure_set_t full of data for benchmarking. */
             {
                 bench_set_t* bench = (bench_set_t*) &readings[index];
-                bench->seqno = bench_seqno++;
+                bench->seqno = bench_seqno - 1;
                 bench->msec = (uint32_t) (xtimer_now_usec64() / 1000);
                 bench->radio_on_time = radioOnTime;
                 bench->radio_off_time = radioOffTime;

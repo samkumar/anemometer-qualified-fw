@@ -29,6 +29,8 @@ cond_t readings_cond = COND_INIT;
 char chunk_buf[SEND_CHUNK_SIZE+1];
 
 #ifdef USE_COAP
+extern uint32_t sendBatch;
+
 mutex_t coap_blocking_mutex = MUTEX_INIT;
 cond_t coap_blocking_cond = COND_INIT;
 bool coap_request_done = false;
@@ -241,6 +243,7 @@ void send_measurement_loop(void) {
                     //coap_set_token(&request, (const uint8_t*) &coap_token, sizeof(coap_token));
                     coap_set_payload(&request, chunk_buf, chunk_buf_index);
 
+                    sendBatch++;
                     coap_blocking_request(&endpoint, &request);
                 }
 #endif
