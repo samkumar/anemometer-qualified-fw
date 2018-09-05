@@ -90,9 +90,10 @@ uint32_t sendBatchSliding = 0;
 
 /* Variables for communicating with TCP thread. */
 extern measure_set_t readings[READING_BUF_SIZE];
-extern cib_t readings_cib;
 extern mutex_t readings_mutex;
 extern cond_t readings_cond;
+int buffer_put(void);
+int buffer_avail(void);
 
 uint16_t ms_seqno = 0;
 
@@ -268,10 +269,10 @@ void tx_measure(asic_tetra_t *a, measurement_t *m, physical_sensors_t *phy)
   ms.parity = parity;
 
   mutex_lock(&readings_mutex);
-  int index = cib_put(&readings_cib);
+  int index = buffer_put();
   if (index != -1) {
       memcpy(&readings[index], &ms, sizeof(readings[index]));
-      if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
+      if (buffer_avail() >= READING_SEND_LIMIT) {
           cond_signal(&readings_cond);
       }
   }
@@ -456,12 +457,11 @@ int main(void)
     start_sendloop();
 #if SEND_FAKE_DATA
     uint32_t bench_seqno = 0;
-    xtimer_ticks32_t start = xtimer_now();
     for (;;) {
-        xtimer_periodic_wakeup(&start, 1000000ul);
+        xtimer_usleep(1000000ul);
         mutex_lock(&readings_mutex);
         bench_seqno++;
-        int index = cib_put(&readings_cib);
+        int index = buffer_put();
         if (index != -1) {
             /* Pack measure_set_t full of data for benchmarking. */
             {
@@ -482,7 +482,7 @@ int main(void)
                 bench->total_rexmits = totalRexmitCnt;
                 bench->batches_sent = sendBatch;
                 bench->batches_sent_sliding = sendBatchSliding;
-                bench->measures_app_queued = cib_avail(&readings_cib) - 1;
+                bench->measures_app_queued = buffer_avail() - 1;
                 /* Encode transport policy in bits 3 and 4. */
 #ifdef USE_TCP
                 bench->bench_type = 0x04;
@@ -503,7 +503,7 @@ int main(void)
                 /* Encode Node ID in upper nybble. */
                 bench->bench_type |= 0x00;
             }
-            if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
+            if (buffer_avail() >= READING_SEND_LIMIT) {
                 cond_signal(&readings_cond);
             }
         }

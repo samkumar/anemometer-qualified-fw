@@ -59,12 +59,16 @@ kernel_pid_t start_sendloop(void);
 
 
 /* Constants for buffering and chunking. */
-// READING_BUF_SIZE must be a power of 2
+#ifdef USE_TCP
 #define READING_BUF_SIZE 64
+#endif
+#ifdef USE_COAP
+#define READING_BUF_SIZE 104
+#endif
 
 #ifdef SEND_IN_BATCHES
 
-#define READING_SEND_LIMIT 32
+#define READING_SEND_LIMIT 64
 
 #ifdef USE_TCP
 // Make this large and let TCP perform segmentation

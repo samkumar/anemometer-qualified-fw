@@ -15,16 +15,52 @@
 #endif
 
 #include "sched.h"
-#include <cib.h>
 #include <cond.h>
 #include <mutex.h>
 
 #include "anemometer.h"
 
 measure_set_t readings[READING_BUF_SIZE];
-cib_t readings_cib = CIB_INIT(READING_BUF_SIZE);
 mutex_t readings_mutex = MUTEX_INIT;
 cond_t readings_cond = COND_INIT;
+
+/* The actual buffer. */
+int read_next = 0;
+int write_next = 0;
+int buffer_size = 0;
+int buffer_put(void) {
+    if (buffer_size == READING_BUF_SIZE) {
+        return -1;
+    }
+    int result = write_next;
+    write_next++;
+    buffer_size++;
+    if (write_next == READING_BUF_SIZE) {
+        write_next = 0;
+    }
+    return result;
+}
+int buffer_peek(void) {
+    if (buffer_size == 0) {
+        return -1;
+    }
+    return read_next;
+}
+int buffer_get(void) {
+    if (buffer_size == 0) {
+        return -1;
+    }
+    int result = read_next;
+    read_next++;
+    buffer_size--;
+    if (read_next == READING_BUF_SIZE) {
+        read_next = 0;
+    }
+    return result;
+}
+int buffer_avail(void) {
+    return buffer_size;
+}
 
 char chunk_buf[SEND_CHUNK_SIZE+1];
 
@@ -171,7 +207,7 @@ void send_measurement_loop(void) {
              * 2) Send it over TCP
              */
             mutex_lock(&readings_mutex);
-            while (cib_avail(&readings_cib) < READING_SEND_LIMIT) {
+            while (buffer_avail() < READING_SEND_LIMIT) {
                 cond_wait(&readings_cond, &readings_mutex);
             }
             mutex_unlock(&readings_mutex);
@@ -190,21 +226,21 @@ void send_measurement_loop(void) {
                 mutex_lock(&readings_mutex);
                 size_t chunk_buf_index = 0;
                 do {
-                    index = cib_peek(&readings_cib);
+                    index = buffer_peek();
                     assert(index != -1);
                     size_t chunk_buf_left = SEND_CHUNK_SIZE - chunk_buf_index;
                     size_t measure_set_left = sizeof(measure_set_t) - partway_size_copied;
                     if (chunk_buf_left >= measure_set_left) {
                         memcpy(&chunk_buf[chunk_buf_index], &((char*) &readings[index])[partway_size_copied], measure_set_left);
                         chunk_buf_index += measure_set_left;
-                        cib_get(&readings_cib);
+                        buffer_get();
                         partway_size_copied = 0;
                     } else {
                         memcpy(&chunk_buf[chunk_buf_index], &((char*) &readings[index])[partway_size_copied], chunk_buf_left);
                         partway_size_copied += chunk_buf_left;
                         chunk_buf_index = SEND_CHUNK_SIZE;
                     }
-                } while (!(hit_empty = (cib_avail(&readings_cib) == 0)) && chunk_buf_index != SEND_CHUNK_SIZE);
+                } while (!(hit_empty = (buffer_avail() == 0)) && chunk_buf_index != SEND_CHUNK_SIZE);
                 mutex_unlock(&readings_mutex);
 
                 /* Second, send out the data (with the lock released). */
