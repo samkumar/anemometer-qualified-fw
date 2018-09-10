@@ -144,6 +144,13 @@ void coap_blocking_request(coap_endpoint_t* server_endpoint, coap_message_t* req
     coap_request_done = false;
     mutex_unlock(&coap_blocking_mutex);
 }
+void coap_nonconfirmable_request(coap_endpoint_t* server_endpoint, coap_message_t* request) {
+    coap_request_state_t request_state;
+    memset(&request_state, 0x00, sizeof(request_state));
+    assert(!coap_request_done);
+    coap_send_request(&request_state, server_endpoint, request, coap_blocking_request_callback);
+    xtimer_usleep(500000ul);
+}
 #endif
 
 void send_measurement_loop(void) {
@@ -255,7 +262,11 @@ void send_measurement_loop(void) {
 #ifdef SEND_IN_BATCHES
                 {
                     static coap_message_t request;
+#ifdef COAP_NOCONFIRM
+                    coap_init_message(&request, COAP_TYPE_NON, COAP_POST, coap_seqno++);
+#else
                     coap_init_message(&request, COAP_TYPE_CON, COAP_POST, coap_seqno++);
+#endif
                     //coap_set_token(&request, (const uint8_t*) &coap_token, sizeof(coap_token));
 #ifdef USE_BLOCKWISE_TRANSFER
                     coap_set_header_uri_path(&request, "/anemometer");
@@ -267,7 +278,11 @@ void send_measurement_loop(void) {
                     coap_set_payload(&request, chunk_buf, chunk_buf_index+1);
 #endif
 
+#ifdef COAP_NOCONFIRM
+                    coap_nonconfirmable_request(&endpoint, &request);
+#else
                     coap_blocking_request(&endpoint, &request);
+#endif
                 }
 #else
                 {

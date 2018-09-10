@@ -79,20 +79,21 @@ CFLAGS += -DRADIO_DUTYCYCLE_MONITOR
 # CFLAGS += -DSEND_IN_BATCHES
 
 # Use port of Contiki CoAP
-# DIRS += $(CURDIR)/coap
-# USEMODULE += contiki_coap
-# CFLAGS += -DUSE_COAP
-# CFLAGS += -DCOCOA
+DIRS += $(CURDIR)/coap
+USEMODULE += contiki_coap
+CFLAGS += -DUSE_COAP
+CFLAGS += -DCOCOA
+CFLAGS += -DCOAP_NOCONFIRM
 
-USEMODULE += task_sched
-USEMODULE += tcp_freebsd
-USEMODULE += tcp_freebsd_internal
-USEMODULE += tcp_freebsd_internal_cc
+# USEMODULE += task_sched
+# USEMODULE += tcp_freebsd
+# USEMODULE += tcp_freebsd_internal
+# USEMODULE += tcp_freebsd_internal_cc
 USEMODULE += ipv6_addr
 CFLAGS += -DSOCK_HAS_IPV6
 USEMODULE += posix_sockets
-USEMODULE += sock_tcp_freebsd
-CFLAGS += -DUSE_TCP
+# USEMODULE += sock_tcp_freebsd
+# CFLAGS += -DUSE_TCP
 
 CFLAGS    += -DRTT_STDIO_DISABLE_STDIN
 #CFLAGS 		+= -DSTDIO_POLL_INTERVAL=5000U
