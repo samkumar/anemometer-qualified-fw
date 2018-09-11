@@ -135,7 +135,9 @@ void coap_blocking_request(coap_endpoint_t* server_endpoint, coap_message_t* req
     coap_request_state_t request_state;
     memset(&request_state, 0x00, sizeof(request_state));
     assert(!coap_request_done);
+    openthread_lock_coarse_mutex();
     coap_send_request(&request_state, server_endpoint, request, coap_blocking_request_callback);
+    openthread_unlock_coarse_mutex();
     mutex_lock(&coap_blocking_mutex);
     while (!coap_request_done) {
         cond_wait(&coap_blocking_cond, &coap_blocking_mutex);
@@ -144,11 +146,18 @@ void coap_blocking_request(coap_endpoint_t* server_endpoint, coap_message_t* req
     coap_request_done = false;
     mutex_unlock(&coap_blocking_mutex);
 }
+void coap_nonconfirmable_request_callback(coap_request_state_t* state) {
+    (void) state;
+    // Should not be reached!
+    assert(false);
+}
 void coap_nonconfirmable_request(coap_endpoint_t* server_endpoint, coap_message_t* request) {
     coap_request_state_t request_state;
     memset(&request_state, 0x00, sizeof(request_state));
     assert(!coap_request_done);
-    coap_send_request(&request_state, server_endpoint, request, coap_blocking_request_callback);
+    openthread_lock_coarse_mutex();
+    coap_send_request(&request_state, server_endpoint, request, coap_nonconfirmable_request_callback);
+    openthread_unlock_coarse_mutex();
     xtimer_usleep(500000ul);
 }
 #endif
@@ -221,7 +230,9 @@ void send_measurement_loop(void) {
 
             /* Repeatedly send chunks until the readings buffer is empty. */
 #ifdef USE_COAP
+#ifndef COAP_NOCONFIRM
             schedule_fast_polling();
+#endif
 #ifdef SEND_IN_BATCHES
             uint32_t block_num = 0;
             //coap_token++;
@@ -263,7 +274,7 @@ void send_measurement_loop(void) {
                 {
                     static coap_message_t request;
 #ifdef COAP_NOCONFIRM
-                    coap_init_message(&request, COAP_TYPE_NON, COAP_POST, coap_seqno++);
+                    coap_init_message(&request, COAP_TYPE_NON, COAP_PUT, coap_seqno++);
 #else
                     coap_init_message(&request, COAP_TYPE_CON, COAP_POST, coap_seqno++);
 #endif
@@ -289,19 +300,29 @@ void send_measurement_loop(void) {
                     //coap_token++;
 
                     static coap_message_t request;
+#ifdef COAP_NOCONFIRM
+                    coap_init_message(&request, COAP_TYPE_NON, COAP_PUT, coap_seqno++);
+#else
                     coap_init_message(&request, COAP_TYPE_CON, COAP_POST, coap_seqno++);
+#endif
                     coap_set_header_uri_path(&request, "/anemometer");
                     //coap_set_token(&request, (const uint8_t*) &coap_token, sizeof(coap_token));
                     coap_set_payload(&request, chunk_buf, chunk_buf_index);
 
                     sendBatch++;
+#ifdef COAP_NOCONFIRM
+                    coap_nonconfirmable_request(&endpoint, &request);
+#else
                     coap_blocking_request(&endpoint, &request);
+#endif
                 }
 #endif
 #endif
             } while (!hit_empty);
 #ifdef USE_COAP
+#ifndef COAP_NOCONFIRM
             stop_polling_fast();
+#endif
 #endif
         }
 
