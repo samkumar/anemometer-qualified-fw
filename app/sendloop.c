@@ -286,6 +286,11 @@ void send_measurement_loop(void) {
 #else
                     coap_set_header_uri_path(&request, "/anechunked");
                     chunk_buf[chunk_buf_index] = block_num++;
+                    if (block_num == sizeof(bench_set_t)) {
+                        // At this point we can safely wrap block_num to 0
+                        // If we instead wait until "256" it will cause server-side misalignment issues
+                        block_num = 0;
+                    }
                     coap_set_payload(&request, chunk_buf, chunk_buf_index+1);
 #endif
 
