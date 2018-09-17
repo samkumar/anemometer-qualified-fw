@@ -74,6 +74,19 @@ uint32_t timeoutRexmitCnt = 0;
 uint32_t totalRexmitCnt = 0;
 uint32_t sendBatch = 0;
 uint32_t sendBatchSliding = 0;
+uint64_t radioListenTime = 0;
+
+
+uint64_t start_time = 0;
+void start_listening(void) {
+    assert(start_time == 0);
+    start_time = xtimer_now_usec64();
+}
+void end_listening(void) {
+    uint64_t now = xtimer_now_usec64();
+    radioListenTime += (now - start_time);
+    start_time = 0;
+}
 
 // 1 second, defined in us
 #define INTERVAL (1000000U)
@@ -480,8 +493,9 @@ int main(void)
                 bench->packets_received = transportPacketsReceived;
                 bench->timeout_rexmits = timeoutRexmitCnt;
                 bench->total_rexmits = totalRexmitCnt;
-                bench->batches_sent = sendBatch;
-                bench->batches_sent_sliding = sendBatchSliding;
+                // bench->batches_sent = sendBatch;
+                // bench->batches_sent_sliding = sendBatchSliding;
+                bench->extra.radio_listen_time = radioListenTime;
                 bench->measures_app_queued = buffer_avail() - 1;
                 /* Encode transport policy in bits 3 and 4. */
 #ifdef USE_TCP

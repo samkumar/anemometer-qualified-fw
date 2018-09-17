@@ -41,8 +41,13 @@ typedef struct __attribute__((packed))
     uint32_t packets_received;       // 60:63
     uint32_t timeout_rexmits;        // 64:67
     uint32_t total_rexmits;           // 68:71
-    uint32_t batches_sent;           // 72:75
-    uint32_t batches_sent_sliding;   // 76:79
+    union {
+        struct {
+            uint32_t batches_sent;           // 72:75
+            uint32_t batches_sent_sliding;   // 76:79
+        } batch_info;
+        uint64_t radio_listen_time;  // 72:79
+    } extra;
     uint8_t measures_app_queued;     // 80
     uint8_t bench_type;              // 81
 } bench_set_t; // 82 bytes
