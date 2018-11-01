@@ -59,7 +59,7 @@ const char* method_not_allowed_response = "HTTP/1.0 405 Method Not Allowed\r\n\r
 const char* not_found_response = "HTTP/1.0 404 Not Found\r\n\r\nError 404 (Not Found)\n";
 
 #define QUOTE(...) #__VA_ARGS__
-const char* home_page = QUOTE(
+const char* home_page = "HTTP/1.0 200 OK\r\n\r\n" QUOTE(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,7 +108,7 @@ const char* home_page = QUOTE(
 </body>
 );
 
-const char* network_page_beginning = QUOTE(
+const char* network_page_beginning = "HTTP/1.0 200 OK\r\n\r\n" QUOTE(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -226,7 +226,7 @@ const char* network_page_end = QUOTE(
 </body>
 );
 
-const char* sensor_page_beginning = QUOTE(
+const char* sensor_page_beginning = "HTTP/1.0 200 OK\r\n\r\n" QUOTE(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -300,10 +300,6 @@ const char* sensor_page_beginning = QUOTE(
                         <td>Button State</td>
                         <td id="but">0</td>
                     </tr>
-                    <tr>
-                        <td>Occupancy</td>
-                        <td id="occ">0</td>
-                    </tr>
                 </tbody>
             </table>
         </div>
@@ -319,8 +315,7 @@ const char* sensor_page_middle_format = QUOTE(
             "tmp": "%u.%02u C",
             "hum": "%u.%02u%%",
             "lum": "%d",
-            "but": "%u",
-            "occ": "%u"
+            "but": "%u"
         };
 );
 const char* sensor_page_end = QUOTE(
@@ -444,8 +439,7 @@ void serve_page(int clsock) {
                 (unsigned) (reading.hdc_hum / 100),
                 (unsigned) (reading.hdc_hum % 100),
                 (int) reading.light_lux,
-                (unsigned) reading.buttons,
-                (unsigned) reading.occup
+                (unsigned) reading.buttons
             );
         }
         if (write_string(clsock, buffer)) {
