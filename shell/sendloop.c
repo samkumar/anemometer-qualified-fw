@@ -19,6 +19,7 @@
 #include <mutex.h>
 
 #include "board.h"
+#include <openthread.h>
 
 #define SERVER_PORT 5000
 
@@ -37,7 +38,7 @@ bool write_string(int clsock, const char* string) {
     return false;
 }
 
-bool fill_newline_buffer(int clsock, char* buffer, int buffer_length, int* bytes_read) {
+bool fill_buffer(int clsock, char* buffer, char until, int buffer_length, int* bytes_read) {
     int i = 0;
     while (i < buffer_length) {
         int rv = recv(clsock, &buffer[i], 1, 0);
@@ -47,7 +48,7 @@ bool fill_newline_buffer(int clsock, char* buffer, int buffer_length, int* bytes
             perror("read");
             return true;
         }
-        if (buffer[i - 1] == '\n') {
+        if (buffer[i - 1] == until) {
             break;
         }
     }
@@ -65,7 +66,7 @@ void run_shell(int clsock) {
         }
 
         int bytes_read;
-        if (fill_newline_buffer(clsock, buffer, BUFFER_SIZE, &bytes_read)) {
+        if (fill_buffer(clsock, buffer, '\n', BUFFER_SIZE, &bytes_read)) {
             return;
         }
         if (bytes_read == 0 || bytes_read == 1) {
@@ -89,13 +90,27 @@ void run_shell(int clsock) {
         buffer[end] = '\0';
         const char* command = &buffer[start];
 
-        bool wrote = false;
         if (strcmp(command, "ledon") == 0) {
             LED_ON;
         } else if (strcmp(command, "ledoff") == 0) {
             LED_OFF;
         } else if (strcmp(command, "ledtoggle") == 0) {
             LED_TOGGLE;
+        } else if (strcmp(command, "ipaddr") == 0) {
+            char buffer[128];
+            char buffer2[128];
+            const otNetifAddress* addr = otIp6GetUnicastAddresses(openthread_get_instance());
+            while (addr != NULL) {
+                if (addr->mValid) {
+                    if (inet_ntop(AF_INET6, &addr->mAddress, buffer, sizeof(buffer)) != NULL) {
+                        snprintf(buffer2, sizeof(buffer2), "%s/%d\n", buffer, (int) addr->mPrefixLength);
+                        write_string(clsock, buffer2);
+                    } else {
+                        write_string(clsock, "ERROR\n");
+                    }
+                }
+                addr = addr->mNext;
+            }
         } else {
             if (write_string(clsock, "Invalid command ")) {
                 return;
@@ -103,11 +118,9 @@ void run_shell(int clsock) {
             if (write_string(clsock, command)) {
                 return;
             }
-            wrote = true;
-        }
-
-        if (wrote && write_string(clsock, "\n")) {
-            return;
+            if (write_string(clsock, "\n")) {
+                return;
+            }
         }
     }
 }
