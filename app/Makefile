@@ -79,27 +79,27 @@ CFLAGS += -DRADIO_DUTYCYCLE_MONITOR
 # CFLAGS += -DSEND_IN_BATCHES
 
 # Use port of Contiki CoAP
-DIRS += $(CURDIR)/coap
-USEMODULE += contiki_coap
-CFLAGS += -DUSE_COAP
-CFLAGS += -DCOCOA
-CFLAGS += -DCOAP_NOCONFIRM
+# DIRS += $(CURDIR)/coap
+# USEMODULE += contiki_coap
+# CFLAGS += -DUSE_COAP
+# CFLAGS += -DCOCOA
+# CFLAGS += -DCOAP_NOCONFIRM
 
-# USEMODULE += task_sched
-# USEMODULE += tcp_freebsd
-# USEMODULE += tcp_freebsd_internal
-# USEMODULE += tcp_freebsd_internal_cc
+USEMODULE += task_sched
+USEMODULE += tcp_freebsd
+USEMODULE += tcp_freebsd_internal
+USEMODULE += tcp_freebsd_internal_cc
 USEMODULE += ipv6_addr
 CFLAGS += -DSOCK_HAS_IPV6
 USEMODULE += posix_sockets
-# USEMODULE += sock_tcp_freebsd
-# CFLAGS += -DUSE_TCP
+USEMODULE += sock_tcp_freebsd
+CFLAGS += -DUSE_TCP
 
 CFLAGS    += -DRTT_STDIO_DISABLE_STDIN
 #CFLAGS 		+= -DSTDIO_POLL_INTERVAL=5000U
 #CFLAGS    += -DRTT_STDIO_ENABLE_BLOCKING_STDOUT
 CFLAGS    += -DTHREAD_STACKSIZE_DEFAULT=1800
-CFLAGS    += -DTHREAD_STACKSIZE_MAIN=700
+CFLAGS    += -DTHREAD_STACKSIZE_MAIN=550
 # CPU clock speed
 #CFLAGS    += -DCLOCK_USE_OSCULP32_DFLL=1
 CFLAGS    += -DCLOCK_USE_ADAPTIVE=0
@@ -107,14 +107,14 @@ CFLAGS    += -DDMAC_ENABLE=0
 CFLAGS    += -DVDD=1800
 
 # Sensors
-# USEMODULE += saul_reg        # SAUL: sensor/actuator abstraction layer
-# USEMODULE += auto_init_saul
-#USEMODULE += tmp006          # ambient temperature
-# USEMODULE += hdc1000         # humidity and temperature
+USEMODULE += saul_reg        # SAUL: sensor/actuator abstraction layer
+USEMODULE += auto_init_saul
+USEMODULE += tmp006          # ambient temperature
+USEMODULE += hdc1000         # humidity and temperature
 USEMODULE += fxos8700        # acceleration and magnetic field
-# USEMODULE += apds9007        # illumination
-# USEMODULE += ekmb            # pir-based occupancy
-# USEMODULE += pulse_counter   # simple push button
+USEMODULE += apds9007        # illumination
+USEMODULE += ekmb            # pir-based occupancy
+USEMODULE += pulse_counter   # simple push button
 
 # Security
 USEMODULE += crypto

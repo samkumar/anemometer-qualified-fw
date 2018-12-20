@@ -56,7 +56,7 @@ kernel_pid_t start_sendloop(void);
 
 #define SENDER_PORT 49998
 //#define RECEIVER_IP "2001:470:4a71:0:c46e:c7e9:6ac8:fcbd"
-#define RECEIVER_IP "2001:470:4a71:0:64f2:8807:bbfd:a8b4"
+#define RECEIVER_IP "fd11:22::fc47:a8d6:81b1:2a53"
 #define RECEIVER_PORT 50000
 
 /* Used for network benchmarks/testing. */
