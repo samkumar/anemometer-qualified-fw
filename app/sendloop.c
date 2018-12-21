@@ -251,7 +251,9 @@ void send_measurement_loop(void) {
                     if (chunk_buf_left >= measure_set_left) {
                         memcpy(&chunk_buf[chunk_buf_index], &((char*) &readings[index])[partway_size_copied], measure_set_left);
                         chunk_buf_index += measure_set_left;
+#ifndef MEASURE_THROUGHPUT
                         buffer_get();
+#endif
                         partway_size_copied = 0;
                     } else {
                         memcpy(&chunk_buf[chunk_buf_index], &((char*) &readings[index])[partway_size_copied], chunk_buf_left);
