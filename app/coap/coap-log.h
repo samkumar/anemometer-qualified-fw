@@ -54,7 +54,7 @@
 /* Chosen/implemented by samkumar. */
 #include <stdio.h>
 #include <inttypes.h>
-#define LOG_LEVEL_COAP 4
+#define LOG_LEVEL_COAP 0
 
 /* Copied from Contiki's sys/log-conf.h (by samkumar). */
 #define LOG_WITH_LOC 0

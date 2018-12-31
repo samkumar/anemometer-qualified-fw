@@ -19,6 +19,13 @@
 
 #include "anemometer.h"
 
+#ifdef USE_TCP
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif
+
 
 /* I need these variables to make OpenThread compile. */
 uint16_t myRloc = 0;
@@ -96,7 +103,7 @@ void end_listening(void) {
 #define MAIN_QUEUE_SIZE     (8)
 #define TMP_I2C_ADDRESS 0x40
 #define DIRECT_DATA_ADDRESS 0x65
-#define OPENTHREAD_INIT_TIME 5000000ul
+#define OPENTHREAD_INIT_TIME 60000000ul
 
 //Anemometer v2
 #define L7_TYPE 9
@@ -467,6 +474,83 @@ int main(void)
 {
     printf("[init] booting build b%d\n",BUILD);
     xtimer_usleep(OPENTHREAD_INIT_TIME);
+#if defined(USE_TCP) && defined(MEASURE_THROUGHPUT)
+    for (;;) {
+        int sock;
+        int rv;
+        static char data[1386];
+        {
+            sock = socket(AF_INET6, SOCK_STREAM, 0);
+            if (sock == -1) {
+                perror("socket");
+                goto retry;
+            }
+
+            struct sockaddr_in6 receiver;
+            receiver.sin6_family = AF_INET6;
+            receiver.sin6_port = htons(RECEIVER_PORT);
+
+            rv = inet_pton(AF_INET6, RECEIVER_IP, &receiver.sin6_addr);
+            if (rv == -1) {
+                perror("invalid address family in inet_pton");
+                goto retry;
+            } else if (rv == 0) {
+                perror("invalid ip address in inet_pton");
+                goto retry;
+            }
+
+            struct sockaddr_in6 local;
+            local.sin6_family = AF_INET6;
+            local.sin6_addr = in6addr_any;
+            local.sin6_port = htons(SENDER_PORT);
+
+            rv = bind(sock, (struct sockaddr*) &local, sizeof(struct sockaddr_in6));
+            if (rv == -1) {
+                perror("bind");
+                goto retry;
+            }
+
+            rv = connect(sock, (struct sockaddr*) &receiver, sizeof(struct sockaddr_in6));
+            if (rv == -1) {
+                perror("connect");
+                goto retry;
+            }
+
+            for (;;) {
+                if (send(sock, data, sizeof(data), 0) == -1) {
+                    perror("send");
+                    goto retry;
+                }
+            }
+
+/*            int bytes_received = 0;
+            int limit = 16384;
+            int start = xtimer_now_usec64();
+            for (;;) {
+                int rv = recv(sock, data, sizeof(data), 0);
+                if (rv == -1) {
+                    perror("recv");
+                    goto retry;
+                } else if (rv == 0) {
+                    printf("recv: end of file\n");
+                    goto retry;
+                }
+                bytes_received += rv;
+                if (bytes_received >= limit) {
+                    printf("Received %d bytes in %d seconds\n", bytes_received, (int) ((xtimer_now_usec64() - start) / 1000000u));
+                    do {
+                        limit += 16384;
+                    } while (bytes_received > limit);
+                }
+            }*/
+        }
+retry:
+        close(sock);
+        /* Wait ten seconds before trying to connect again. */
+        xtimer_usleep(10000000u);
+    }
+    return 0;
+#endif
     start_sendloop();
 #if SEND_FAKE_DATA
     uint32_t bench_seqno = 0;
@@ -515,7 +599,7 @@ int main(void)
                 bench->bench_type |= 0x03;
 #endif
                 /* Encode Node ID in upper nybble. */
-                bench->bench_type |= 0x00;
+                bench->bench_type |= 0x20;
             }
             if (buffer_avail() >= READING_SEND_LIMIT) {
                 cond_signal(&readings_cond);

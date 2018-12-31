@@ -56,7 +56,9 @@ kernel_pid_t start_sendloop(void);
 
 #define SENDER_PORT 49998
 //#define RECEIVER_IP "2001:470:4a71:0:c46e:c7e9:6ac8:fcbd"
-#define RECEIVER_IP "2001:470:4a71:0:64f2:8807:bbfd:a8b4"
+//#define RECEIVER_IP "2001:470:4a71:0:64f2:8807:bbfd:a8b4"
+#define RECEIVER_IP "2600:1f1c:c93:da00:76c2:1dbd:72c2:d063"
+//#define RECEIVER_IP "fdde:ad00:beef:0:392d:9398:40a4:8e"
 #define RECEIVER_PORT 50000
 
 /* Used for network benchmarks/testing. */
@@ -65,15 +67,15 @@ kernel_pid_t start_sendloop(void);
 
 /* Constants for buffering and chunking. */
 #ifdef USE_TCP
-#define READING_BUF_SIZE 64
+#define READING_BUF_SIZE 1//64
 #endif
 #ifdef USE_COAP
-#define READING_BUF_SIZE 104
+#define READING_BUF_SIZE 1//104
 #endif
 
 #ifdef SEND_IN_BATCHES
 
-#define READING_SEND_LIMIT 64
+#define READING_SEND_LIMIT 1 //64
 
 #ifdef USE_TCP
 // Make this large and let TCP perform segmentation
@@ -82,9 +84,9 @@ kernel_pid_t start_sendloop(void);
 #ifdef USE_COAP
 // This should be sized to CoAP uses the same number of link-layer frames as TCP
 #ifdef USE_BLOCKWISE_TRANSFER
-#define SEND_CHUNK_SIZE 512
+#define SEND_CHUNK_SIZE 256 //512
 #else
-#define SEND_CHUNK_SIZE 469
+#define SEND_CHUNK_SIZE 257 //469
 #endif
 
 #endif

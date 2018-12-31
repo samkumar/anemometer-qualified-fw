@@ -14,7 +14,7 @@ PROGRAMMER ?= jlink
 QUIET ?= 1
 
 USEPKG += openthread
-OPENTHREAD_TYPE ?= mtd
+OPENTHREAD_TYPE ?= ftd
 ifeq ($(OPENTHREAD_TYPE),mtd)
     # MTD: A Minimal Thread Device does not have router functionality
     # compiled in. As a result, it is not necessary to configure the
@@ -26,8 +26,8 @@ else
     # ftd: A Full Thread Device has router functionality compiled in
     USEMODULE += openthread-ftd
     USEMODULE += openthread-cli-ftd
-    #BOARD ?= samr21-xpro
-    BOARD ?= hamilton
+    BOARD ?= samr21-xpro
+    #BOARD ?= hamilton
     #CFLAGS += -DCLOCK_USE_PLL=1
 endif
 
@@ -76,31 +76,32 @@ USEMODULE += rtt_stdio
 CFLAGS += -DCPU_DUTYCYCLE_MONITOR
 CFLAGS += -DRADIO_DUTYCYCLE_MONITOR
 
-# CFLAGS += -DSEND_IN_BATCHES
+CFLAGS += -DSEND_IN_BATCHES
 
 # Use port of Contiki CoAP
-DIRS += $(CURDIR)/coap
-USEMODULE += contiki_coap
-CFLAGS += -DUSE_COAP
-CFLAGS += -DCOCOA
-CFLAGS += -DCOAP_NOCONFIRM
-# CFLAGS += MEASURE_THROUGHPUT
+#DIRS += $(CURDIR)/coap
+#USEMODULE += contiki_coap
+#CFLAGS += -DUSE_COAP
+#CFLAGS += -DCOCOA
+#CFLAGS += -DUSE_BLOCKWISE_TRANSFER
+#CFLAGS += -DCOAP_NOCONFIRM
+CFLAGS += -DMEASURE_THROUGHPUT
 
-# USEMODULE += task_sched
-# USEMODULE += tcp_freebsd
-# USEMODULE += tcp_freebsd_internal
-# USEMODULE += tcp_freebsd_internal_cc
+USEMODULE += task_sched
+USEMODULE += tcp_freebsd
+USEMODULE += tcp_freebsd_internal
+USEMODULE += tcp_freebsd_internal_cc
 USEMODULE += ipv6_addr
 CFLAGS += -DSOCK_HAS_IPV6
 USEMODULE += posix_sockets
-# USEMODULE += sock_tcp_freebsd
-# CFLAGS += -DUSE_TCP
+USEMODULE += sock_tcp_freebsd
+CFLAGS += -DUSE_TCP
 
 CFLAGS    += -DRTT_STDIO_DISABLE_STDIN
 #CFLAGS 		+= -DSTDIO_POLL_INTERVAL=5000U
 #CFLAGS    += -DRTT_STDIO_ENABLE_BLOCKING_STDOUT
 CFLAGS    += -DTHREAD_STACKSIZE_DEFAULT=1800
-CFLAGS    += -DTHREAD_STACKSIZE_MAIN=700
+CFLAGS    += -DTHREAD_STACKSIZE_MAIN=1800#700
 # CPU clock speed
 #CFLAGS    += -DCLOCK_USE_OSCULP32_DFLL=1
 CFLAGS    += -DCLOCK_USE_ADAPTIVE=0
