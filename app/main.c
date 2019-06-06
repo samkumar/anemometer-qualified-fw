@@ -95,7 +95,7 @@ extern mutex_t readings_mutex;
 extern cond_t readings_cond;
 
 uint16_t ms_seqno = 0;
-
+#if 0
 typedef struct
 {
   uint16_t temp;
@@ -447,13 +447,13 @@ failure:
   xtimer_usleep(A_LONG_TIME);
   reboot();
 }
+#endif
 
-#define SEND_FAKE_DATA 1
 int main(void)
 {
     printf("[init] booting build b%d\n",BUILD);
     xtimer_usleep(OPENTHREAD_INIT_TIME);
-    start_sendloop();
+    //start_sendloop();
 #if SEND_FAKE_DATA
     uint32_t bench_seqno = 1;
     for (;;) {
@@ -499,13 +499,17 @@ int main(void)
                 bench->bench_type |= 0x03;
 #endif
                 /* Encode Node ID in upper nybble. */
-                bench->bech_type |= 0x00;
+                bench->bech_type |= 0x50;
             }
             if (cib_avail(&readings_cib) >= READING_SEND_LIMIT) {
                 cond_signal(&readings_cond);
             }
         }
         mutex_unlock(&readings_mutex);
+    }
+#elif PURE_ROUTER
+    for (;;) {
+        xtimer_usleep(100000000u);
     }
 #else
     begin();

@@ -1,6 +1,6 @@
 APPLICATION = anemometer_qfw_tcp
 RIOTBASE = $(CURDIR)/../RIOT-OS
-BOARD = hamilton
+BOARD = samr21-xpro
 
 CFLAGS += -DMODEL_3C
 CFLAGS += -DROOM_TYPE
@@ -14,7 +14,7 @@ PROGRAMMER ?= jlink
 QUIET ?= 1
 
 USEPKG += openthread
-OPENTHREAD_TYPE ?= mtd
+OPENTHREAD_TYPE ?= ftd
 ifeq ($(OPENTHREAD_TYPE),mtd)
     # MTD: A Minimal Thread Device does not have router functionality
     # compiled in. As a result, it is not necessary to configure the
@@ -26,15 +26,15 @@ else
     # ftd: A Full Thread Device has router functionality compiled in
     USEMODULE += openthread-ftd
     USEMODULE += openthread-cli-ftd
-    #BOARD ?= samr21-xpro
-    BOARD ?= hamilton
+    BOARD ?= samr21-xpro
+    #BOARD ?= hamilton
     #CFLAGS += -DCLOCK_USE_PLL=1
 endif
 
 #Define PANID, CHANNEL, TXPOWER, and UART_BAUDRATE used by default
 OPENTHREAD_PANID ?= 0xbeef
 OPENTHREAD_CHANNEL ?= 26
-OPENTHREAD_TXPOWER ?= 4
+OPENTHREAD_TXPOWER ?= -8
 OPENTHREAD_UART_BAUDRATE ?= 115200
 
 CFLAGS += -DOPENTHREAD_PANID=${OPENTHREAD_PANID}
@@ -84,15 +84,15 @@ CFLAGS += -DRADIO_DUTYCYCLE_MONITOR
 # CFLAGS += -DUSE_COAP
 # CFLAGS += -DCOCOA
 
-USEMODULE += task_sched
-USEMODULE += tcp_freebsd
-USEMODULE += tcp_freebsd_internal
-USEMODULE += tcp_freebsd_internal_cc
+#USEMODULE += task_sched
+#USEMODULE += tcp_freebsd
+#USEMODULE += tcp_freebsd_internal
+#USEMODULE += tcp_freebsd_internal_cc
 USEMODULE += ipv6_addr
 CFLAGS += -DSOCK_HAS_IPV6
 USEMODULE += posix_sockets
-USEMODULE += sock_tcp_freebsd
-CFLAGS += -DUSE_TCP
+#USEMODULE += sock_tcp_freebsd
+#CFLAGS += -DUSE_TCP
 
 CFLAGS    += -DRTT_STDIO_DISABLE_STDIN
 #CFLAGS 		+= -DSTDIO_POLL_INTERVAL=5000U
@@ -103,14 +103,14 @@ CFLAGS    += -DTHREAD_STACKSIZE_MAIN=700
 #CFLAGS    += -DCLOCK_USE_OSCULP32_DFLL=1
 CFLAGS    += -DCLOCK_USE_ADAPTIVE=0
 CFLAGS    += -DDMAC_ENABLE=0
-CFLAGS    += -DVDD=1800
+#CFLAGS    += -DVDD=1800
 
 # Sensors
 # USEMODULE += saul_reg        # SAUL: sensor/actuator abstraction layer
 # USEMODULE += auto_init_saul
 #USEMODULE += tmp006          # ambient temperature
 # USEMODULE += hdc1000         # humidity and temperature
-USEMODULE += fxos8700        # acceleration and magnetic field
+#USEMODULE += fxos8700        # acceleration and magnetic field
 # USEMODULE += apds9007        # illumination
 # USEMODULE += ekmb            # pir-based occupancy
 # USEMODULE += pulse_counter   # simple push button

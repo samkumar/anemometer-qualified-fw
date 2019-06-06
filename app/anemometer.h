@@ -55,8 +55,8 @@ kernel_pid_t start_sendloop(void);
 #define RECEIVER_PORT 50000
 
 /* Used for network benchmarks/testing. */
-#define SEND_FAKE_DATA 1
-
+#define SEND_FAKE_DATA 0
+#define PURE_ROUTER 1
 
 /* Constants for buffering and chunking. */
 // READING_BUF_SIZE must be a power of 2
